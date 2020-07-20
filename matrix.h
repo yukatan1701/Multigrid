@@ -10,6 +10,7 @@ class Matrix {
     elem_t *mat;
 public:
     Matrix(size_t size);
+    Matrix(const Matrix& mt);
     Matrix &operator=(const Matrix &mt);
     Matrix &operator+=(const Matrix &mt);
     elem_t *operator[](size_t idx) const;

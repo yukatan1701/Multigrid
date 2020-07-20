@@ -1,5 +1,6 @@
 #include <cstring>
 #include <stdexcept>
+#include <iostream>
 #include "matrix.h"
 
 Matrix::Matrix(size_t N) {
@@ -11,9 +12,16 @@ Matrix::Matrix(size_t N) {
     memset(mat, 0, sizeof(elem_t) * N * N);
 }
 
+Matrix::Matrix(const Matrix &mt) {
+    Matrix::N = mt.N;
+    mat = new elem_t[(N + 1) * (N + 1)];
+    memcpy(mat, mt.mat, (N + 1) * (N + 1) * sizeof(elem_t));
+}
+
 Matrix &Matrix::operator=(const Matrix& mt) {
     delete mat;
     size_t N = mt.N;
+    Matrix::N = N;
     mat = new elem_t[(N + 1) * (N + 1)];
     memcpy(mat, mt.mat, (N + 1) * (N + 1) * sizeof(elem_t));
     return *this;
@@ -32,8 +40,10 @@ Matrix &Matrix::operator+=(const Matrix &mt) {
 }
 
 elem_t *Matrix::operator[](const size_t idx) const {
-    if (idx < 1 || idx > N)
+    if (idx < 1 || idx > N) {
+        std::cerr << idx << " " << N << std::endl;
         throw new std::invalid_argument("Matrix index must be positive.");
+    }
     return mat + idx * N;
 }
 
@@ -112,6 +122,7 @@ void Matrix::print() const {
         }
         printf("\n");
     }
+    printf("***********************************\n");
 }
 /*
 void Matrix::fill_diagonals(elem_t lower, elem_t central, elem_t upper) {

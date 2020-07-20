@@ -5,6 +5,6 @@
 
 typedef double elem_t;
 #define PRINT_WIDTH 3
-#define PRINT_PRECISION 0
+#define PRINT_PRECISION 3
 
 #endif
