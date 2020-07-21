@@ -16,7 +16,7 @@ Then make and run:
 $ make
 $ ./mgm 2 2
 ```
-MGM parameters:
-`j` (first) - power of matrix size (n = 2^j + 1)
+MGM parameters:  
+`j` (first) - power of matrix size (n = 2^j + 1)  
 'ncycle' (second) - V-cycle depth
 
