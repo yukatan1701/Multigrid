@@ -19,7 +19,7 @@ Matrix::Matrix(const Matrix &mt) {
 }
 
 Matrix &Matrix::operator=(const Matrix& mt) {
-    delete mat;
+    delete [] mat;
     size_t N = mt.N;
     Matrix::N = N;
     mat = new elem_t[(N + 1) * (N + 1)];

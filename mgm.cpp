@@ -8,7 +8,7 @@
 #define NGMAX 15
 
 double f(double x, double y) {
-	return exp(x * y);
+	return -2 * sin(x * y) * exp(x * y);
 }
 
 Matrix *rstrct(const Matrix &uf, size_t nc) {
@@ -57,13 +57,7 @@ Matrix *interp(const Matrix &uc, size_t nf) {
 
     return UF;
 }
-/*
-Matrix *addint(Matrix &uf, const Matrix &uc, Matrix &res, size_t nf) {
-    res = interp(uc, nf);
-    *uf += res;
-    return uf;
-}
-*/
+
 Matrix *slvsml(const Matrix &rhs) {
     Matrix *u = new Matrix(3);
     double h = 0.5;
@@ -83,9 +77,6 @@ void relax(Matrix &u, const Matrix &rhs, size_t n) {
 				u[i][j]=0.25*(u[i+1][j]+u[i-1][j]+u[i][j+1]
 					+u[i][j-1]-h2*rhs[i][j]);
 	}
-   /* printf("((((((())))))))))))))\n");
-    u.print();
-    printf("((((((())))))))))))))\n");*/
 }
 
 Matrix *resid(const Matrix &u, const Matrix &rhs)
@@ -110,72 +101,97 @@ Matrix MGM(const Matrix &rhs, size_t ng, size_t ncycle) {
     const size_t n = rhs.size();
     size_t nn = n / 2 + 1;
     size_t ngrid = ng - 1;
-
-    std::vector<Matrix *> ires(ng), irho(ng), irhs(ng), iu(ng);
+    
+    std::vector<Matrix *> ires(ng + 1), irho(ng + 1), irhs(ng + 1), iu(ng + 1);
 
     irho[ngrid] = rstrct(rhs, nn);
     while (nn > 3) {
 		nn = nn / 2 + 1;
         ngrid -= 1;
 		irho[ngrid] = rstrct(*irho[ngrid + 1], nn);
-        irho[ngrid]->print();
+        #ifdef DEBUG
+            printf("first restrict\n");
+            irho[ngrid]->print();
+        #endif
 	}
-
     nn = 3;
     iu[1] = slvsml(*irho[1]);
-    //iu[1]->print();
+    #ifdef DEBUG
+        printf("iu[1]\n");
+        iu[1]->print();
+    #endif
     irhs[1] = new Matrix(nn);
-
     ngrid = ng;
     for (size_t j = 2; j <= ngrid; j++) {
 		nn = 2 * nn - 1;
 		iu[j] = interp(*iu[j-1], nn);
-        iu[j]->print();
+        #ifdef DEBUG
+            printf("interp\n");
+            iu[j]->print();
+        #endif
 		irhs[j] = new Matrix(nn);
         if (j != ngrid) {
             *irhs[j] = *irho[j];
         } else {
             *irhs[j] = rhs;
         }
-        //irhs[j]->print();
-        //printf("loop\n");
+        #ifdef DEBUG
+            irhs[j]->print();
+            printf("loop\n");
+        #endif
 		for (size_t jcycle = 1; jcycle <= ncycle; jcycle++) {
 			size_t nf = nn;
 			for (size_t jj = j; jj >= 2; jj--) {
                 for (size_t jpre = 1; jpre <= NPRE; jpre++)
                     relax(*iu[jj], *irhs[jj], nf);
-                //printf("relax\n");
-                //iu[jj]->print();
+                #ifdef DEBUG
+                    printf("relax\n");
+                    iu[jj]->print();
+                #endif
                 ires[jj] = resid(*iu[jj], *irhs[jj]);
-                //printf("resid\n");
-                //ires[jj]->print();
+                #ifdef DEBUG
+                    printf("resid\n");
+                    ires[jj]->print();
+                #endif
                 nf = nf / 2 + 1;
                 irhs[jj-1] = rstrct(*ires[jj], nf);
-                //printf("restict\n");
-                //irhs[jj-1]->print();
+                #ifdef DEBUG
+                    printf("restict\n");
+                    irhs[jj-1]->print();
+                #endif
                 iu[jj-1]->clear();
-                //printf("clear\n");
-                //iu[jj-1]->print();
+                #ifdef DEBUG
+                    printf("clear\n");
+                    iu[jj-1]->print();
+                #endif
 			}
 			iu[1] = slvsml(*irhs[1]);
-            //printf("slvsml\n");
-            //iu[1]->print();
+            #ifdef DEBUG
+                printf("slvsml\n");
+                iu[1]->print();
+            #endif
 			nf = 3;
 			for (size_t jj=2;jj<=j;jj++) {
                 nf = 2 * nf - 1;
                 ires[jj] = interp(*iu[jj-1], nf);
                 *iu[jj] += *ires[jj];
-                //printf("addint\n");
-                //iu[jj]->print();
+                #ifdef DEBUG
+                    printf("addint\n");
+                    iu[jj]->print();
+                #endif
                 for (size_t jpost = 1; jpost <= NPOST; jpost++)
                     relax(*iu[jj], *irhs[jj], nf);
-                //printf("postrelax\n");
-                //iu[jj]->print();
+                #ifdef DEBUG
+                    printf("postrelax\n");
+                    iu[jj]->print();
+                #endif
 			}
+            
 		}
 	}
     Matrix u = *iu[ngrid];
-    for (size_t i = 1; i < ng; i++) {
+
+    for (size_t i = 1; i <= ng; i++) {
         delete ires[i];
         delete irho[i];
         delete irhs[i];
@@ -187,7 +203,7 @@ Matrix MGM(const Matrix &rhs, size_t ng, size_t ncycle) {
 
 
 int main(int argc, char **argv) {
-    int ng = 2; // ng is a maximal grid level
+    size_t ng = 2; // ng is a maximal grid level
     if (argc > 1) {
         ng = atoi(argv[1]);
     }
@@ -199,11 +215,18 @@ int main(int argc, char **argv) {
     Matrix rhs(n);
     for (size_t i = 1; i <= n; i++) {
         for (size_t j = 1; j <= n; j++) {
-            rhs[i][j] = f(i, j);
+            rhs[i][j] = f(i / double(n), j / double(n));
         }
     }
-    printf("%lu\n", n);
-    Matrix u = MGM(rhs, ng, 2);
-    u.print();
+    Matrix u = MGM(rhs, ng, 2);/*
+    printf("# X, Y, Z\n");
+    for (size_t i = 1; i <= n; i++) {
+        for (size_t j = 1; j <= n; j++) {
+            printf("%lu %lu %lf\n", i, j, u[i][j]);
+        }
+    }*/
+    #ifdef DEBUG
+        u.print();
+    #endif
     return 0;
 }
