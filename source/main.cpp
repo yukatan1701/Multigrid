@@ -25,12 +25,14 @@ int main(int argc, char **argv) {
         }
     }
     Matrix u = MGM(rhs, ng, ncycles);
-    /*printf("# X, Y, Z\n");
+    #ifndef DEBUG
+    printf("# X, Y, Z\n");
     for (size_t i = 1; i <= n; i++) {
         for (size_t j = 1; j <= n; j++) {
             printf("%lu %lu %lf\n", i, j, u[i][j]);
         }
-    }*/
+    }
+    #endif
     #ifdef DEBUG
         u.print();
     #endif
